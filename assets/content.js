@@ -33,8 +33,55 @@ class ExtensionController {
 
     listenToCustomEvent() {
         window.addEventListener('callExtensionFormFiller', () => {
-            alert('TODO');
-            console.log(document);
+            const fields = document.querySelectorAll('input:not([type="hidden"]), textarea, select');
+            const result = [];
+
+            fields.forEach(field => {
+                let label = null;
+
+                // 1. Coba cari label dengan atribut for
+                if (field.id) {
+                    const labelElement = document.querySelector(`label[for="${field.id}"]`);
+                    if (labelElement) {
+                        label = labelElement.innerText.trim();
+                    }
+                }
+
+                // 2. Coba cari label sebagai parent atau grandparent
+                if (!label) {
+                    const parentLabel = field.closest('label');
+                    if (parentLabel) {
+                        label = parentLabel.innerText.trim();
+                    }
+                }
+
+                // 3. Coba cari elemen sebelumnya yang kemungkinan mengandung teks label
+                if (!label) {
+                    const previous = field.previousElementSibling;
+                    if (previous && previous.innerText) {
+                        label = previous.innerText.trim();
+                    }
+                }
+
+                // 4. Fallback terakhir: placeholder atau name
+                if (!label) {
+                    label = field.placeholder || field.name || null;
+                }
+
+                result.push({
+                    tag: field.tagName.toLowerCase(),
+                    type: field.type || null,
+                    name: field.name || null,
+                    label,
+                    value: field.value
+                });
+
+                if (label && (field.tagName.toLowerCase() === 'textarea' || field.type === 'text' || field.type === 'search')) {
+                    field.value = `${label} (Autofill)`;
+                }
+            });
+
+            console.log(result);
         });
     }
 
