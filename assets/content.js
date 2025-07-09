@@ -1,6 +1,28 @@
 class ExtensionController {
     constructor() {
+        this.userButton = document.createElement('button');
+        this.setupButtonListeners();
         this.init();
+    }
+
+    setupButtonListeners() {
+        const normalBg = 'hsla(134, 60.8%, 41%, 0.35)';
+        const hoverBg = 'hsla(134, 60.8%, 41%, 1.0)';
+
+        this.userButton.style.transition = 'background-color 0.3s ease';
+
+        this.userButton.addEventListener('mouseenter', () => {
+            this.userButton.style.backgroundColor = hoverBg;
+        });
+
+        this.userButton.addEventListener('mouseleave', () => {
+            this.userButton.style.backgroundColor = normalBg;
+        });
+
+        this.userButton.addEventListener('click', () => {
+            const event = new CustomEvent('callExtensionFormFiller');
+            window.dispatchEvent(event);
+        });
     }
 
     init() {
@@ -11,7 +33,8 @@ class ExtensionController {
 
     listenToCustomEvent() {
         window.addEventListener('callExtensionFormFiller', () => {
-            alert('Fungsi di dalam ekstensi berhasil dipanggil!');
+            alert('TODO');
+            console.log(document);
         });
     }
 
@@ -19,6 +42,15 @@ class ExtensionController {
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (message.log) {
                 console.log('FE:', message.log);
+            } else if (message.active != null) {
+                console.log("Status: " + message.active);
+                if (message.active) {
+                    this.addFillButton();
+                } else {
+                    if (this.userButton.parentElement) {
+                        this.userButton.remove();
+                    }
+                }
             }
         });
     }
@@ -34,10 +66,10 @@ class ExtensionController {
                     }
                 });
             });
-            console.log("Currently active: " + result);
+            console.log("FE Status: " + result);
             return result;
         } catch (error) {
-            console.log("Error: " + error.message);
+            console.log("FE Error: " + error.message);
             return false;
         }
     }
@@ -45,28 +77,29 @@ class ExtensionController {
     async addFillButton() {
         const isActive = await this.getActiveState();
         if (isActive) {
-            const button = document.createElement('button');
-            button.textContent = 'Trigger Extension Function from Website';
+            this.userButton.textContent = 'Fill Out Form';
 
-            Object.assign(button.style, {
+            Object.assign(this.userButton.style, {
                 position: 'fixed',
-                top: '80px',
-                right: '20px',
+                top: '5px',
+                right: '5px',
                 zIndex: 9999,
                 padding: '10px',
-                backgroundColor: '#28a745',
+                backgroundColor: 'hsla(134, 60.8%, 41%, 0.35)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '5px',
                 cursor: 'pointer'
             });
 
-            button.addEventListener('click', () => {
-                const event = new CustomEvent('callExtensionFormFiller');
-                window.dispatchEvent(event);
-            });
-
-            document.body.appendChild(button);
+            if (!this.userButton.parentElement) {
+                document.body.appendChild(this.userButton);
+            }
+        } else {
+            console.log("FE: Not active!")
+            if (this.userButton.parentElement) {
+                this.userButton.remove();
+            }
         }
     }
 }

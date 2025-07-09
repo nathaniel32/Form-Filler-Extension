@@ -6,24 +6,28 @@
 }); */
 
 class Main {
-    constructor(toggleBtnId) {
-        this.toggleBtn = document.getElementById(toggleBtnId);
+    constructor(activeBtnId) {
+        this.activeBtn = document.getElementById(activeBtnId);
         this.init();
     }
 
-    print(message) {
+    sendToContent(data) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { log: message });
+            chrome.tabs.sendMessage(tabs[0].id, data);
         });
     }
 
-    async init() {
-        const state = await this.getToggleState();
-        this.updateToggleBtnLabel(state);
-        this.toggleBtn.addEventListener("click", () => this.toggle());
+    print(message) {
+        this.sendToContent({ log: message });
     }
 
-    async getToggleState() {
+    async init() {
+        const state = await this.getActiveState();
+        this.updateActiveBtnLabel(state);
+        this.activeBtn.addEventListener("click", () => this.active());
+    }
+
+    async getActiveState() {
         try {
             const result = await new Promise((resolve, reject) => {
                 chrome.storage.local.get("filler_extension", (data) => {
@@ -43,7 +47,7 @@ class Main {
     }
 
 
-    async setToggleState(state) {
+    async setActiveState(state) {
         try {
             await new Promise((resolve, reject) => {
                 chrome.storage.local.set({ filler_extension: { active: state } }, () => {
@@ -60,18 +64,19 @@ class Main {
         }
     }
 
-    async toggle() {
-        const current = await this.getToggleState();
+    async active() {
+        const current = await this.getActiveState();
         const newState = !current;
-        await this.setToggleState(newState);
-        this.updateToggleBtnLabel(newState);
+        await this.setActiveState(newState);
+        this.updateActiveBtnLabel(newState);
+        this.sendToContent({ active: newState });
     }
 
-    updateToggleBtnLabel(state) {
-        this.toggleBtn.textContent = state ? "Disable" : "Activate";
+    updateActiveBtnLabel(state) {
+        this.activeBtn.textContent = state ? "Disable" : "Activate";
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    new Main("toggleBtn");
+    new Main("activeBtn");
 });
